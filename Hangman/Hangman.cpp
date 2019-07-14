@@ -7,6 +7,8 @@
 #include <fstream>
 #include <algorithm>
 #include <conio.h>
+#include <iomanip>
+#include <Windows.h>
 using namespace std;
 
 
@@ -29,9 +31,16 @@ struct WordMap {
 	WordMap* next;
 	char character;
 };
-WordMap* arr[15];
+WordMap* arr[20];
 
+struct CharStack {
+	CharStack* next;
+	CharStack* prev;
+	char character;
+};
 
+CharStack* user = NULL;
+CharStack* cp = NULL;
 
 Account* accounts = NULL;
 Account* current = NULL;
@@ -49,6 +58,39 @@ Account* GetNewNode(string username, string password) {
 	return newNode;
 }
 
+
+void Push(char c, CharStack* node) {
+	CharStack* newNode = new CharStack;
+	newNode->character = c;
+	newNode->next = NULL;
+	if (node == NULL) {
+		newNode->prev = NULL;
+		node = newNode;
+	}
+	else {
+		newNode->prev = node;
+		node->next = newNode;
+		node = newNode;
+	}
+
+	user = node;
+}
+
+char Pop(CharStack* node) {
+	char n = node->character;
+	node = node->prev;
+	user = node;
+	return n;
+}
+
+bool empty(CharStack* node) {
+	if (user == NULL) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
 
 Account* Insert(Account* root, string username, string password) {
 	if (root == NULL)
@@ -191,11 +233,21 @@ int Hash(char c) {
 }
 
 void HashMap(int key, char val) {
+	WordMap* holder = arr[key];
 	WordMap* newNode = new WordMap;
 	newNode->character = val;
 	newNode->next = NULL;
-	arr[key] = newNode;
+	if (arr[key] == NULL) {
+		arr[key] = newNode;
+	}
+	else if (arr[key]->character != val) {
+		while (holder->next != NULL) {
+			holder = holder->next;
+		}
+		holder->next = newNode;
+	}
 }
+
 
 void MapWords(string word) {
 	for (int i = 0; i < word.length(); i++) {
@@ -203,11 +255,246 @@ void MapWords(string word) {
 	}
 }
 
-void GamePlay() {
-	currentWord = head;
-	MapWords(currentWord->word);
+bool search(char c) {
+	WordMap* list = new WordMap;
+	for (int i = 0; i < 20; i++) {
+		list = arr[i];
+		while (list) {
+			if (list->character == c)
+				//pick is correct
+				return true;
+			else
+				list = list->next;
+		}
+	}
+	//pick is wrong
+	return false;
+}
+
+char PickCharacter() {
+	char c;
+	cout << "Type a letter: ";
+	cin >> c;
+	return c;
+}
+
+bool WordDisplay(char c, char arr[], int &ctr) {
+	string word = currentWord->word;
+	cout << "Current Word: ";
+	for (int i = 0; i < word.length(); i++){
+		if (word[i] == c && arr[i] != c) {
+			arr[i] = c;
+			ctr--;
+		}
+		cout << arr[i];
+	}
+	cout << endl;
+
+	if (ctr == 0)
+		return false;
+	else
+		return true;
+	
 
 }
+
+void display() {
+	WordMap* list = new WordMap;
+	for (int i = 0; i < 20; i++) {
+		list = arr[i];
+		while (list) {
+			cout << list->character << endl;
+			list = list->next;
+		}
+	}
+}
+
+void FlushMap(char chara[]) {
+	for (int i = 0; i < 20; i++) {
+		arr[i] = NULL;
+		chara[i] = ' ';
+	}
+}
+
+void GenRand(int sarr[]) {
+	
+	int i, j, temp;
+	srand(time(NULL));
+	for (i = 0; i < 26; i++)
+		sarr[i] = i + 1;
+
+	for (i = 0; i < 26; i++) {
+		j = (rand() % 25) + 1;
+
+		temp = sarr[i];
+		sarr[i] = sarr[j];
+		sarr[j] = temp;
+	}
+
+	
+}
+
+char ComputerPick(int picker, int sarr[]) {
+	char alphabet[26] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+						'h', 'i', 'j', 'k', 'l', 'm', 'n',
+						'o', 'p', 'q', 'r', 's', 't', 'u',
+						'v', 'w', 'x', 'y', 'z' };
+	
+	return alphabet[sarr[picker]];
+
+}
+
+void DamageDisplay(int hp) {
+	if (hp == 100) {
+		cout << R"(
+	  ________
+	  |		
+	  |	   
+	  |	   
+	__|__
+		)";
+	}
+	else if (hp >= 80 && hp <= 99) {
+		cout << R"(
+	  ________
+	  |		O
+	  |	   
+	  |	   
+	__|__
+		)";
+	}
+	else if (hp >= 60 && hp <= 79) {
+		cout << R"(
+	  ________
+	  |		O
+	  |	    |
+	  |	  
+	__|__
+		)";
+	}
+	else if (hp >= 40 && hp <= 59) {
+		cout << R"(
+	  ________
+	  |		O
+	  |	   /|
+	  |	   
+	__|__
+		)";
+	}
+	else if (hp >= 20 && hp <= 39) {
+cout << R"(
+	  ________
+	  |		O
+	  |	   /|\
+	  |	   
+	__|__
+		)";
+	}
+	else if (hp >= 0 && hp <= 19) {
+		cout << R"(
+	  ________
+	  |		O
+	  |	   /|\
+	  |	   / 
+	__|__
+		)";
+	}
+	else {
+		cout << R"(
+	  ________
+	  |		O
+	  |	   /|\
+	  |	   / \
+	__|__
+		)";
+	}
+}
+
+void GamePlay() {
+	system("CLS");
+	int cpPicker = 0;
+	int ctr = 0;
+	int currPlayer = 1;
+	int CPHP = 100;
+	int UserHP = 100;
+	int sarr[26];
+	int dmg = 20;
+	char c = ' ';
+	char arr[20]= " ";
+	currentWord = head;
+	while (currentWord) {
+		system("CLS");
+		GenRand(sarr);
+		cpPicker = 0;
+		MapWords(currentWord->word);
+		ctr = currentWord->word.length();
+		display();
+		cout << currentWord->word << endl;
+		
+		//start of real gameplay
+		do {
+			system("CLS");
+			cout << "User HP: " << UserHP << endl;
+			DamageDisplay(UserHP);
+			cout << endl << "Computer HP: " << CPHP << endl;
+			DamageDisplay(CPHP);
+
+			cout << "\n\n-------------------------------------------------\n\n";
+			if (WordDisplay(c, arr, ctr)) {
+
+				if (currPlayer) {
+					c = PickCharacter();
+					if (!search(c)) {
+						Push(c, user);
+						c = ' ';
+						currPlayer = 0;
+					}
+				}
+				else {
+					cout << "Computer is picking" << endl;
+					Sleep(3000);
+					c = ComputerPick(cpPicker, sarr);
+					cout << "Computer Picked: " << c << endl;
+					if (!search(c)) {
+						Push(c, cp);
+						c = ' ';
+						currPlayer = 1;
+					}
+					cpPicker++;
+				}
+
+			}
+			else {
+				cout << "finish na" << endl;
+				_getch();
+			}
+
+		} while (ctr != 0);
+		
+		currentWord = currentWord->next;
+		c = ' ';
+		FlushMap(arr);
+		if (currPlayer) {
+			while (empty(user)) {
+				if (Pop(user)) {
+					dmg--;
+				}
+			}
+			CPHP = CPHP - dmg;
+		}
+		else {
+			while (empty(cp)) {
+				if (Pop(cp)) {
+					dmg--;
+				}
+			}
+			UserHP = UserHP - dmg;
+		}
+		
+	}
+}
+
+
 
 int MainMenu() {
 	system("CLS");
@@ -285,7 +572,7 @@ int main()
 					topic = TopicSelect();
 					if (topic != "NONE") {
 						GetWords(topic);
-						_getch();
+						GamePlay();
 						
 					}
 				}
@@ -303,7 +590,3 @@ int main()
 		}
 	} while (flag);
 }
-
-
-
-

@@ -143,7 +143,6 @@ cook job
 ecologist job
 diver job
 deficit money
-actor job
 attorney job
 cartoonist job
 dividend money
